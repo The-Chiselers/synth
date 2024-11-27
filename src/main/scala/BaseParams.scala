@@ -1,24 +1,19 @@
 // (c) 2024 Rocksavage Technology, Inc.
 // This code is licensed under the Apache Software License 2.0 (see LICENSE.MD)
 
-package tech.rocksavage.chiselware.DynamicFifo
+package tech.rocksavage.chiselware.AddressDecoder
 
 import chisel3._
 import chisel3.util._
 
-/** Default parameter settings for Dynamic FIFO
+/** Default parameter settings for the AddressDecoder
   *
   * @constructor
   *   default parameter settings
   * @param dataWidth
-  *
-  * specifies the width of the FIFO data
-  * @param fifoDepth
-  *   specifices the depth of the FIFO
-  * @param externalRam
-  *   specifies whether to use an external SRAM or generate internal FFs
-  * @param coverage
-  *   specifies whether to calculate port coverage during simulation
+  *   specifies the width of the data bus
+  * @param addressWidth
+  *   specifies the width of the address bus
   * @author
   *   Warren Savage
   * @version 1.0
@@ -28,12 +23,16 @@ import chisel3.util._
   */
 case class BaseParams(
     dataWidth: Int = 8,
-    fifoDepth: Int = 8,
-    externalRam: Boolean = false,
-    coverage: Boolean = false,
-    bbFiles: List[String] = List("your_sram.v")
+    addressWidth: Int = 8,
+
+    // module params
+    max_delay: Int = 8
 ) {
 
-  require(dataWidth >= 4, "Width must be greater than or equal 4")
-  require((fifoDepth % 2) == 0, "Depth must be a power of 2")
+  require(dataWidth >= 1, "Data Width must be greater than or equal 1")
+  require(addressWidth >= 1, "Address Width must be greater than or equal 1")
+
+  // module params
+  require(max_delay >= 1, "Max Delay must be greater than or equal 1")
+
 }

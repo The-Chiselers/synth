@@ -1,52 +1,50 @@
-// (c) 2024 Rocksavage Technology, Inc.
-// This code is licensed under the Apache Software License 2.0 (see LICENSE.MD)
+//> using scala "2.13.12"
+//> using dep "org.chipsalliance::chisel:6.5.0"
+//> using plugin "org.chipsalliance:::chisel-plugin:6.5.0"
+//> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ymacro-annotations"
+package tech.rocksavage.chiselware.AddressDecoder
 
-package tech.rocksavage.chiselware.DynamicFifo
-
-import chisel3._
-import chisel3.util._
 import _root_.circt.stage.ChiselStage
+import _root_.circt.stage.FirtoolOption
+// third-party imports
+import chisel3._
 
-// Generate some Verilog test cases for synthesis
-object GenVerilog extends App {
-  // Create a map with configurations to generate
-  val config = Map(
-    // name  -> externalRam, dataWidth, fifoDepth
-    "small_false_8_8"     -> Vector(false, 8, 8),
-    "medium_false_32_64"  -> Vector(false, 32, 64),
-    "large_false_64_256"  -> Vector(false, 64, 256),
-    "small_true_64_256"   -> Vector(true, 64, 256),
-    "medium_true_128_128" -> Vector(true, 128, 1028),
-    "large_true_256_2048" -> Vector(true, 256, 2048)
-  )
+object Main extends App {
 
-  config.foreach { case (testName, paramVec) =>
-    val thisExternalRam = paramVec(0).asInstanceOf[Boolean]
-    val thisDataWidth   = paramVec(1).asInstanceOf[Int]
-    val thisFifoDepth   = paramVec(2).asInstanceOf[Int]
-    val myParams = BaseParams(
-      externalRam = thisExternalRam,
-      dataWidth = thisDataWidth,
-      fifoDepth = thisFifoDepth
-    )
-
-    println(
-      s"Generating Verilog config: $testName\t" +
-        s"externalRam = $thisExternalRam\t" +
-        s"dataWidth = $thisDataWidth\t " +
-        s"fifoDepth = $thisFifoDepth"
-    )
-
-    // Generate basic Verilog (suppress SV features with lowering, etc)
-    ChiselStage.emitSystemVerilog(
-      new DynamicFifo(myParams),
-      firtoolOpts = Array(
-        "--lowering-options=disallowLocalVariables,disallowPackedArrays",
-        "--disable-all-randomization",
-        "--strip-debug-info",
-        "--split-verilog",
-        s"-o=generated/synTestCases/$testName"
-      )
-    )
+  // ######### Getting Setup #########
+  // get build root, if not set use null
+  var output = sys.env.get("BUILD_ROOT")
+  if (output == null || output.isEmpty) {
+    println("BUILD_ROOT not set, please set and run again")
+    System.exit(1)
   }
+  // set output directory
+  val outputUnwrapped = output.get
+  val outputDir       = s"$outputUnwrapped/verilog"
+
+  val myParams =
+    BaseParams(
+      dataWidth = 8,
+      addressWidth = 8,
+      max_delay = 8
+    )
+
+  // if output dir does not exist, make path
+  val javaOutputDir = new java.io.File(outputDir)
+  if (!javaOutputDir.exists) javaOutputDir.mkdirs
+
+  // ######### Set Up Top Module HERE #########
+  val top_name = "AddressDecoder.sv"
+  ChiselStage.emitSystemVerilog(
+    new Top(myParams),
+    firtoolOpts = Array(
+      "--lowering-options=disallowLocalVariables,disallowPackedArrays",
+      "--disable-all-randomization",
+      "--strip-debug-info",
+      "--split-verilog",
+      s"-o=$outputDir/"
+    )
+  )
+  // ##########################################
+  System.exit(0)
 }

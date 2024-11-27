@@ -49,8 +49,8 @@ docs:
 verilog:
 	@echo Generate Verilog for synthesis
 	mkdir -p generated
-	$(SBT) "runMain tech.rocksavage.chiselware.DynamicFifo.GenVerilog" | tee generated/verilog.rpt
-	rm *.anno.json    
+	$(SBT) "runMain tech.rocksavage.chiselware.AddressDecoder.Main" | tee generated/verilog.rpt
+	# rm *.anno.json    
 
 # Run the tests
 test:
