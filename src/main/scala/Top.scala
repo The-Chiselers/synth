@@ -5,13 +5,12 @@ package tech.rocksavage.chiselware.AddressDecoder
 import chisel3._
 import chisel3.util._
 
-class Top(p: BaseParams) extends AddressableModule {
+class Top(p: AddressParams) extends Module {
   val io = IO(new Bundle {
     val in  = Input(UInt(p.dataWidth.W))
     val out = Output(UInt(p.dataWidth.W))
 
-    val address = Input(UInt(p.addressWidth.W))
-    val data    = Input(UInt(p.dataWidth.W))
+    val addrBundle = AddressBundle(p)
   })
 
   val delay = RegInit(0.U(p.dataWidth.W))

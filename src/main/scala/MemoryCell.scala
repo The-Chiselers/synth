@@ -1,0 +1,1 @@
+class MemoryCell(p: AddressParams) {}
