@@ -9,10 +9,7 @@ import chisel3.util._
 // }
 
 trait AddressableModule extends Module {
-  def io: Bundle;
-//   def addr: Input;
-//   def data: Input;
+  val decoder: AddressDecoder
 
-  def submodules: List[AddressableModule];
-
+  def 
 }
