@@ -5,21 +5,25 @@ package tech.rocksavage.chiselware.AddressDecoder
 import chisel3._
 import chisel3.util._
 
-class Top(p: AddressParams) extends Module {
+class Top(p: BaseParams) extends Module {
   val io = IO(new Bundle {
     val in  = Input(UInt(p.dataWidth.W))
     val out = Output(UInt(p.dataWidth.W))
 
-    val addrBundle = AddressBundle(p)
+    val addr = Input(UInt(p.addressWidth.W))
+    val data = Input(UInt(p.dataWidth.W))
   })
 
-  val delay = RegInit(0.U(p.dataWidth.W))
+  val addressDecoder = Module(new AddrDecoder(p, 0, 1))
+  // UInt<8>[0]
+  addressDecoder.io.range0 := Wire(Vec(0, UInt(p.addressWidth.W)))
+  addressDecoder.io.range1 := Wire(Vec(0, UInt(p.addressWidth.W)))
+  addressDecoder.io.addr   := io.addr
+  addressDecoder.io.data   := io.data
+  addressDecoder.io.en     := 1.B
 
-  when(io.address === 0.U) {
-    delay := io.data
-  }.otherwise {
-    delay := delay
-  }
+  val delay = Wire(UInt(p.dataWidth.W))
+  delay := addressDecoder.io.regs(0)
 
   val shiftReg = RegInit(VecInit(Seq.fill(p.max_delay - 1)(0.U(p.dataWidth.W))))
   shiftReg(0) := io.in
