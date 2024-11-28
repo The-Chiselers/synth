@@ -15,16 +15,9 @@ class AddrDecoder(
     val range0 = Input(Vec(n, UInt(p.addressWidth.W)))
     val range1 = Input(Vec(n, UInt(p.addressWidth.W)))
     val addr   = Input(UInt(p.addressWidth.W))
-    val data   = Input(UInt(p.dataWidth.W))
     val en     = Input(Bool())
     val sel    = Output(Vec(n, Bool()))
-    val regs   = Output(Vec(numRegs, UInt(p.dataWidth.W)))
   })
-
-  val regs = RegInit(VecInit(Seq.fill(numRegs)(0.U(p.dataWidth.W))))
-
-  // assign regs to io.regs
-  io.regs := regs
 
   // Curried function which accepts a tuple and an input addr
   // Use map to apply it to inputs
@@ -35,26 +28,12 @@ class AddrDecoder(
   for (i <- 0 until n) {
     io.sel(i) := false.B
   }
-  val effectiveRange0 = io.range0 map (_ + numRegs.U)
-  val effectiveRange1 = io.range1 map (_ + numRegs.U)
 
   // io.regs := io.regs
 
   when(io.en) {
-
-    when(inside((0.U, numRegs.U))(io.addr)) {
-      // enumerate the registers
-      for (i <- 0 until numRegs) {
-        when(i.U === io.addr) {
-          regs(i) := io.data
-        }.otherwise {
-          regs(i) := regs(i)
-        }
-      }
-    }.otherwise {
-      for (i <- 0 until n) {
-        io.sel(i) := inside(io.range0(i), io.range1(i))(io.addr)
-      }
+    for (i <- 0 until n) {
+      io.sel(i) := inside(io.range0(i), io.range1(i))(io.addr)
     }
   }
   // $onehot0 output encoding check
