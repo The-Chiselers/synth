@@ -29,7 +29,7 @@ case class BaseParams(
     max_delay: Int = 8,
 
     // Verilog Blackbox files
-    bbFiles: List[String] = List("simple_dual_one_clock.v")
+    bbFiles: List[String] = List("dual_port_sync_sram.v")
 ) {
 
   require(dataWidth >= 1, "Data Width must be greater than or equal 1")

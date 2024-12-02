@@ -1,20 +1,8 @@
-[info] welcome to sbt 1.10.0 (Azul Systems, Inc. Java 21.0.2)
-[info] loading settings for project addressdecoder-build-build-build from metals.sbt ...
-[info] loading project definition from /Users/nick/Projects/HDL/AddressDecoder/project/project/project
-[info] loading settings for project addressdecoder-build-build from metals.sbt ...
-[info] loading project definition from /Users/nick/Projects/HDL/AddressDecoder/project/project
-[success] Generated .bloop/addressdecoder-build-build.json
-[success] Total time: 1 s, completed Nov 28, 2024, 7:27:41 a.m.
-[info] loading settings for project addressdecoder-build from metals.sbt,plugins.sbt ...
-[info] loading project definition from /Users/nick/Projects/HDL/AddressDecoder/project
-[success] Generated .bloop/addressdecoder-build.json
-[success] Total time: 0 s, completed Nov 28, 2024, 7:27:41 a.m.
+[info] welcome to sbt 1.10.0 (N/A Java 21.0.3)
+[info] loading settings for project addressdecoder-build from plugins.sbt ...
+[info] loading project definition from /mnt/c/Users/nickr/Projects/AddressDecoder/project
 [info] loading settings for project root from build.sbt ...
-[info] set current project to addressdecoder (in build file:/Users/nick/Projects/HDL/AddressDecoder/)
-[info] compiling 7 Scala sources to /Users/nick/Projects/HDL/AddressDecoder/target/scala-2.13/classes ...
-[error] /Users/nick/Projects/HDL/AddressDecoder/src/main/scala/Top.scala:48:12: not found: value me
-[error]   delay := me
-[error]            ^
-[error] one error found
-[error] (Compile / compileIncremental) Compilation failed
-[error] Total time: 1 s, completed Nov 28, 2024, 7:27:43 a.m.
+[info] set current project to addressdecoder (in build file:/mnt/c/Users/nickr/Projects/AddressDecoder/)
+[info] compiling 1 Scala source to /mnt/c/Users/nickr/Projects/AddressDecoder/target/scala-2.13/classes ...
+[info] done compiling
+[info] running tech.rocksavage.chiselware.AddressDecoder.Main 
