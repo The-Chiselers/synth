@@ -34,9 +34,10 @@ object Main extends App {
   if (!javaOutputDir.exists) javaOutputDir.mkdirs
 
   // ######### Set Up Top Module HERE #########
-  val top_name = "AddressDecoder.sv"
+  val top_name = "AddrDecode.sv"
+
   ChiselStage.emitSystemVerilog(
-    new Top(myParams),
+    new AddrDecode(myParams, Seq(1, 2, 3, 4, 5)),
     firtoolOpts = Array(
       "--lowering-options=disallowLocalVariables,disallowPackedArrays",
       "--disable-all-randomization",
