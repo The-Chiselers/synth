@@ -44,3 +44,4 @@ bin/
 # build output
 out
 generated/
+/test_run_dir/

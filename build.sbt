@@ -7,16 +7,17 @@ ThisBuild / organizationName := "Rocksavage Technology"
 
 Test / parallelExecution := false
 
-val chiselVersion   = "5.3.0"
+val chiselVersion   = "6.6.0"
 val scalafmtVersion = "2.5.0"
 
 lazy val root = (project in file("."))
   .settings(
-    name                   := "addressdecoder",
+    name                   := "addrdecode",
     Test / publishArtifact := true,
     libraryDependencies ++= Seq(
       "org.chipsalliance" %% "chisel"     % chiselVersion,
-      "edu.berkeley.cs"   %% "chiseltest" % "5.0.0" % "test"
+      "edu.berkeley.cs" %% "chiseltest" % "6.0.0",
+
     ),
     scalacOptions ++= Seq(
       "-language:reflectiveCalls",
@@ -26,7 +27,7 @@ lazy val root = (project in file("."))
       "-Ymacro-annotations"
     ),
     addCompilerPlugin(
-      "org.chipsalliance" % "chisel-plugin" % "5.3.0" cross CrossVersion.full
+      "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     )
   )
 

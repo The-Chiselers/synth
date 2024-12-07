@@ -52,12 +52,12 @@ class Top(p: BaseParams) extends Module with Addressable {
   // ##############
 
   val addressRanges: Seq[Int] = Seq(1)
-  val addressDecoder          = Module(new AddrDecoder(p, addressRanges))
+  val addressDecoder          = Module(new AddrDecode(p, addressRanges))
   addressDecoder.io.addr        := io.addr
   addressDecoder.io.addr_offset := 0.U
   addressDecoder.io.en          := true.B
 
-  val memory = Module(new SramBb(p))
+  val memory = Module(new Memory(p, addressDecoder.total_size))
   memory.io.read_enable   := addressDecoder.io.sel(delay_addr)
   memory.io.write_enable  := addressDecoder.io.sel(delay_addr) && io.we
   memory.io.read_address  := addressDecoder.io.addr_out

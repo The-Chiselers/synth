@@ -1,6 +1,6 @@
 
 #### USER SET VARS ####
-export TOP=Gpio
+export TOP=AddrDecode
 export BUILD_ROOT_RELATIVE="out"
 
 #### CALCUATED VARS ####

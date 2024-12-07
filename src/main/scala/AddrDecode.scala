@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.util._
 
 // Source: https://github.com/chipsalliance/rocket-chip/issues/1668#issuecomment-433528365
-class AddrDecoder(
+class AddrDecode(
     p: BaseParams,
     sizes: Seq[Int]
 ) extends Module
@@ -25,7 +25,7 @@ class AddrDecoder(
 
     val sel           = Output(Vec(len_sel, Bool()))
     val addr_out      = Output(UInt(p.addressWidth.W))
-    val error_code    = Output(AddressDecoderError())
+    val error_code    = Output(AddrDecodeError())
     val error_address = Output(UInt(p.addressWidth.W))
   })
 
@@ -135,7 +135,7 @@ class AddrDecoder(
 
   io.sel           := VecInit(Seq.fill(len_sel)(false.B))
   io.addr_out      := 0.U
-  io.error_code    := AddressDecoderError.None
+  io.error_code    := AddrDecodeError.None
   io.error_address := 0.U
 
   isErr := 0.U
@@ -143,9 +143,9 @@ class AddrDecoder(
   when(en) {
     isErr := addrIsError(ranges, addr, offset)
     when(isErr) {
-      io.error_code := AddressDecoderError.AddressOutOfRange
+      io.error_code := AddrDecodeError.AddressOutOfRange
     }.otherwise {
-      io.error_code := AddressDecoderError.None
+      io.error_code := AddrDecodeError.None
     }
 
     io.sel           := getSelect(ranges, addr, offset)
@@ -154,6 +154,6 @@ class AddrDecoder(
   }
 
   // $onehot0 output encoding check
-  assert(PopCount(io.sel) <= 1.U, "Invalid addr decoding")
+  verification.assert(PopCount(io.sel) <= 1.U, "Invalid addr decoding")
   assert(ranges.length >= 1, "At least one range must be provided")
 }
