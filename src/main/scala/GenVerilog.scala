@@ -2,7 +2,7 @@
 //> using dep "org.chipsalliance::chisel:6.5.0"
 //> using plugin "org.chipsalliance:::chisel-plugin:6.5.0"
 //> using options "-unchecked", "-deprecation", "-language:reflectiveCalls", "-feature", "-Xcheckinit", "-Xfatal-warnings", "-Ywarn-dead-code", "-Ymacro-annotations"
-package tech.rocksavage.chiselware.AddressDecoder
+package tech.rocksavage.chiselware.AddrDecode
 
 import _root_.circt.stage.ChiselStage
 import _root_.circt.stage.FirtoolOption

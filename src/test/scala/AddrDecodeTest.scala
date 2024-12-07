@@ -1,4 +1,4 @@
-package tech.rocksavage.chiselware.AddressDecoder
+package tech.rocksavage.chiselware.AddrDecode
 
 import chisel3._
 import chisel3.util._
@@ -13,7 +13,7 @@ class AddrDecodeTest extends AnyFlatSpec
     val p: BaseParams = new BaseParams(32, 32, 32)
     val sizes: Seq[Int] = Seq(1, 2, 3, 4, 5)
 
-    verify(new AddrDecode(p, sizes, true), Seq(BoundedCheck(5)))
+    verify(new AddrDecode(p, sizes, true), Seq(BoundedCheck(15)))
 
 
   }
