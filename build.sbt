@@ -16,8 +16,7 @@ lazy val root = (project in file("."))
     Test / publishArtifact := true,
     libraryDependencies ++= Seq(
       "org.chipsalliance" %% "chisel"     % chiselVersion,
-      "edu.berkeley.cs" %% "chiseltest" % "6.0.0",
-
+      "edu.berkeley.cs"   %% "chiseltest" % "6.0.0"
     ),
     scalacOptions ++= Seq(
       "-language:reflectiveCalls",

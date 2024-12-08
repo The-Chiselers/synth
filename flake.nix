@@ -18,7 +18,8 @@
             aarch64-darwin = with nixpkgs.legacyPackages.aarch64-darwin; mkShellNoCC {
                 packages = with pkgs; [
 
-                    # Scala 
+                    # Scala
+                    scala_2_13
                     sbt
                     scala-cli
                     scalafmt
@@ -101,6 +102,7 @@
                 packages = with pkgs; [
 
                       # Scala
+                      scala_2_13
                       sbt
                       scala-cli
                       scalafmt

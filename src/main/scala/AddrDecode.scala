@@ -1,195 +1,329 @@
+// (c) 2024 Rocksavage Technology, Inc.
 // This code is licensed under the Apache Software License 2.0 (see LICENSE.MD)
-
-package tech.rocksavage.chiselware.AddrDecode
+package tech.rocksavage.chiselware.addrdecode
 
 import chisel3._
-import chisel3.util._
-import org.scalatest.flatspec.AnyFlatSpec
-import chiseltest.ChiselScalatestTester
-import chiseltest.formal.{BoundedCheck, Formal, past}
+import circt.stage.ChiselStage
 
-// Source: https://github.com/chipsalliance/rocket-chip/issues/1668#issuecomment-433528365
+/** An address decoder that can be used to decode addresses into a set of ranges
+  *
+  * @constructor
+  *   Create a new address decoder
+  * @param p
+  *   BaseParams object including dataWidth and addressWidth
+  * @param sizes
+  *   A sequence of integers representing the size of each range
+  * @param formal
+  *   A boolean value to enable formal verification
+  * @author
+  *   Warren Savage
+  */
 class AddrDecode(
     p: BaseParams,
-    sizes: Seq[Int],
     formal: Boolean = false
 ) extends Module
     with Addressable {
 
-  val len_sel: Int            = sizes.length
+  // ###################
+  // Parameter checking & calculation
+  // ###################
+
+  val lengthSel: Int          = p.memorySizes.length
   var ranges: Seq[(Int, Int)] = Seq()
-  for (i <- 0 until len_sel) {
+  for (i <- 0 until lengthSel) {
     if (i == 0) {
-      ranges = ranges :+ (0, sizes(i) - 1)
+      ranges = ranges :+ (0, p.memorySizes(i) - 1)
     } else {
-      ranges = ranges :+ (ranges(i - 1)._2 + 1, ranges(i - 1)._2 + sizes(i))
+      ranges = ranges :+ (ranges(i - 1)._2 + 1, ranges(i - 1)._2 + p.memorySizes(i))
     }
   }
+  assert(ranges.nonEmpty, "At least one range must be provided")
+  val totalMemorySize: Int = p.memorySizes.sum
 
-  val total_size: Int         = sizes.sum
-
-  def memWidth(): Int = total_size
+  /** Returns the number of memory addresses used by the module
+    *
+    * @return
+    *   The width of the memory
+    */
+  def memWidth(): Int = totalMemorySize
 
   val io = IO(new Bundle {
-    val addr        = Input(UInt(p.addressWidth.W))
-    val addr_offset = Input(UInt(p.addressWidth.W))
-    val en          = Input(Bool())
-    val sel_i       = Input(Bool())
+    val addr       = Input(UInt(p.addressWidth.W))
+    val addrOffset = Input(UInt(p.addressWidth.W))
+    val en         = Input(Bool())
+    val selInput   = Input(Bool())
 
-    val sel           = Output(Vec(len_sel, Bool()))
-    val addr_out      = Output(UInt(p.addressWidth.W))
-    val error_code    = Output(AddrDecodeError())
-    val error_address = Output(UInt(p.addressWidth.W))
+    val sel       = Output(Vec(lengthSel, Bool()))
+    val addrOut   = Output(UInt(p.addressWidth.W))
+    val errorCode = Output(AddrDecodeError())
+    val errorAddr = Output(UInt(p.addressWidth.W))
   })
 
+  /** Returns a vector of booleans representing the selected range
+    *
+    * @param addrRanges
+    *   A sequence of tuples representing the start and end of each range
+    * @param inputAddr
+    *   The address to be decoded
+    * @return
+    *   A vector of booleans representing the selected range
+    */
   def getSelect(
-      range_addr: Seq[(Int, Int)],
-      input_addr: UInt,
+      addrRanges: Seq[(Int, Int)],
+      inputAddr: UInt
   ): Vec[Bool] = {
     // declare sel
-    val sel_out = Wire(Vec(len_sel, Bool()))
+    val selOut = Wire(Vec(lengthSel, Bool()))
     // check if input_addr is in range
     var index: Int = 0
-    while (index < len_sel) {
+    while (index < lengthSel) {
       when(
-        input_addr >= range_addr(
+        inputAddr >= addrRanges(
           index
-        )._1.U && input_addr <= range_addr(
+        )._1.U && inputAddr <= addrRanges(
           index
         )._2.U
       ) {
-        sel_out(index) := true.B
+        selOut(index) := true.B
       }.otherwise {
-        sel_out(index) := false.B
+        selOut(index) := false.B
       }
       index += 1
     }
-    return sel_out
+    return selOut
   }
+
+  /** Returns the address output
+    *
+    * @param addrRanges
+    *   A sequence of tuples representing the start and end of each range
+    * @param inputAddr
+    *   The address to be decoded
+    * @return
+    *   The address output
+    */
 
   def getAddrOut(
-      range_addr: Seq[(Int, Int)],
-      input_addr: UInt,
+      addrRanges: Seq[(Int, Int)],
+      inputAddr: UInt
   ): UInt = {
-    val addr_out = Wire(UInt(p.addressWidth.W))
-    addr_out := 0.U
+    val addrOut = Wire(UInt(p.addressWidth.W))
+    addrOut := 0.U
 
-    for ((start_addr, end_addr) <- range_addr) {
+    for ((startAddr, endAddr) <- addrRanges) {
       when(
-        input_addr >= start_addr.U  && input_addr <= end_addr.U
+        inputAddr >= startAddr.U && inputAddr <= endAddr.U
       ) {
-        addr_out := (input_addr - start_addr.U)
+        addrOut := (inputAddr - startAddr.U)
       }
     }
-    return addr_out
+    return addrOut
   }
 
+  /** Returns a boolean value indicating if the address is in error
+    *
+    * @param rangeAddr
+    *   A sequence of tuples representing the start and end of each range
+    * @param inputAddr
+    *   The address to be decoded
+    * @return
+    *   A boolean value indicating if the address is in error
+    */
   def addrIsError(
-      range_addr: Seq[(Int, Int)],
-      input_addr: UInt
+      rangeAddr: Seq[(Int, Int)],
+      inputAddr: UInt
   ): Bool = {
     val isErr = Wire(Bool())
 
-    val min_addr: Int = range_addr.head._1
-    val max_addr: Int = range_addr.last._2
+    val minAddr: Int = rangeAddr.head._1
+    val maxAddr: Int = rangeAddr.last._2
 
     isErr := false.B
     when(
-      input_addr < min_addr.U || input_addr > max_addr.U
+      inputAddr < minAddr.U || inputAddr > maxAddr.U
     ) {
       isErr := true.B
     }
     return isErr
   }
 
-  // def getErrorCode(
-  //     range_addr: Seq[(Int, Int)],
-  //     input_addr: UInt,
-  //     offset_addr: UInt
-  // ): ChiselEnum = {
-  //   for ((start_addr, end_addr) <- range_addr) {
-  //     when(
-  //       input_addr >= start_addr.U + offset_addr && input_addr <= end_addr.U + offset_addr
-  //     ) {
-  //       return AddressDecoderError.None
-  //     }
-  //   }
-  //   return AddressDecoderError.AddressOutOfRange
-  // }
+  /** Returns the error address
+    *
+    * @param addrRanges
+    *   A sequence of tuples representing the start and end of each range
+    * @param inputAddr
+    *   The address to be decoded
+    * @param offsetAddr
+    *   The offset address
+    * @return
+    *   The error address
+    */
 
   def getErrorAddress(
-      range_addr: Seq[(Int, Int)],
-      input_addr: UInt,
-      offset_addr: UInt
+      addrRanges: Seq[(Int, Int)],
+      inputAddr: UInt,
+      offsetAddr: UInt
   ): UInt = {
-    val error_addr = Wire(UInt(p.addressWidth.W))
-    error_addr := 0.U
+    val errorAddr = Wire(UInt(p.addressWidth.W))
+    errorAddr := 0.U
 
-    val min_addr: Int = range_addr.head._1
-    val max_addr: Int = range_addr.last._2
+    val minAddr: Int = addrRanges.head._1
+    val maxAddr: Int = addrRanges.last._2
 
     when(
-      input_addr < min_addr.U || input_addr > max_addr.U
+      inputAddr < minAddr.U || inputAddr > maxAddr.U
     ) {
-      error_addr := input_addr + offset_addr
+      errorAddr := inputAddr + offsetAddr
     }
 
-    return error_addr
+    return errorAddr
   }
 
-  val isErr = Wire(Bool())
+  // ##########
+  // Main logic
+  // ##########
+  /*
+   * in this section, we take the results from the above functions and assign them to the output ports
+   */
+  private val isErr = Wire(Bool())
+  private val addr  = io.addr - io.addrOffset
+  private val en    = io.en
 
-  val addr   = io.addr - io.addr_offset
-//  val offset = io.addr_offset
-  val en     = io.en
-
-  io.sel           := VecInit(Seq.fill(len_sel)(false.B))
-  io.addr_out      := 0.U
-  io.error_code    := AddrDecodeError.None
-  io.error_address := 0.U
+  io.sel       := VecInit(Seq.fill(lengthSel)(false.B))
+  io.addrOut   := 0.U
+  io.errorCode := AddrDecodeError.None
+  io.errorAddr := 0.U
 
   isErr := 0.U
 
-  when(en && io.sel_i) {
+  when(en && io.selInput) {
     isErr := addrIsError(ranges, addr)
     when(isErr) {
-      io.error_code := AddrDecodeError.AddressOutOfRange
+      io.errorCode := AddrDecodeError.AddressOutOfRange
     }.otherwise {
-      io.error_code := AddrDecodeError.None
+      io.errorCode := AddrDecodeError.None
     }
 
-    io.sel           := getSelect(ranges, addr)
-    io.addr_out      := getAddrOut(ranges, addr)
-    io.error_address := getErrorAddress(ranges, addr, io.addr_offset)
+    io.sel       := getSelect(ranges, addr)
+    io.addrOut   := getAddrOut(ranges, addr)
+    io.errorAddr := getErrorAddress(ranges, addr, io.addrOffset)
   }
 
+  // ###################
+  // Formal verification
+  // ###################
+  /*
+   * The assertions being made here are:
+   * - If the address is in range:
+   *     - Exactly one of the sel vector is high
+   *     - The address is decoded correctly from the relative start of the internal block
+   *         - offset = 10, addr = 20, start_addr = 10, addr_out = 10
+   *     - The error code is set to None
+   *     - The error address is set to 0
+   * - If the address is out of range:
+   *     - The sel vector is all low
+   *     - The address output is 0
+   *     - The error code is set to AddressOutOfRange
+   *     - The error address is set to the input address
+   */
   if (formal) {
-    when(en && io.sel_i) {
+    when(en && io.selInput) {
       // ranges to
-      for ((start_addr, end_addr) <- ranges) {
+      for ((startAddr, endAddr) <- ranges) {
         when(
-          addr >= start_addr.U && addr <= end_addr.U
+          addr >= startAddr.U && addr <= endAddr.U
         ) {
-          assert(io.sel(ranges.indexOf((start_addr, end_addr))), "Invalid addr decoding")
-          assert(io.addr_out === addr - start_addr.U, "Invalid addr output")
-          assert(io.error_code === AddrDecodeError.None, "Invalid error code")
-          assert(io.error_address === 0.U, "Invalid error address")
+          assert(
+            io.sel(ranges.indexOf((startAddr, endAddr))),
+            "Invalid addr decoding"
+          )
+          assert(io.addrOut === addr - startAddr.U, "Invalid addr output")
+          assert(io.errorCode === AddrDecodeError.None, "Invalid error code")
+          assert(io.errorAddr === 0.U, "Invalid error address")
         }
       }
-      val min_addr: Int = ranges.head._1
-      val max_addr: Int = ranges.last._2
+      val minAddr: Int = ranges.head._1
+      val maxAddr: Int = ranges.last._2
       when(
-          addr < min_addr.U || addr > max_addr.U
+        addr < minAddr.U || addr > maxAddr.U
       ) {
-          // assert sel are all low
-          assert(!io.sel.contains(true.B), "Invalid addr decoding")
-          assert(io.addr_out === 0.U, "Invalid addr output")
-          assert(io.error_code === AddrDecodeError.AddressOutOfRange, "Invalid error code")
-          assert(io.error_address === io.addr, "Invalid error address")
+        // assert sel are all low
+        assert(!io.sel.contains(true.B), "Invalid addr decoding")
+        assert(io.addrOut === 0.U, "Invalid addr output")
+        assert(
+          io.errorCode === AddrDecodeError.AddressOutOfRange,
+          "Invalid error code"
+        )
+        assert(io.errorAddr === io.addr, "Invalid error address")
       }
 
     }
   }
 
   assert(ranges.nonEmpty, "At least one range must be provided")
+}
+
+/** A main file to generate Verilog for an example address decoder
+  *
+  */
+
+object Main extends App {
+
+  // ######### Getting Setup #########
+  // get build root, if not set use null
+  var output = sys.env.get("BUILD_ROOT")
+  if (output == null || output.isEmpty) {
+    println("BUILD_ROOT not set, please set and run again")
+    System.exit(1)
+  }
+  // set output directory
+  val outputUnwrapped = output.get
+  val outputDir       = s"$outputUnwrapped/verilog"
+
+  val dataWidth: Int  = 32
+  val addrWidth: Int  = 32
+
+  val configurations = Map(
+    "8x8" -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(8)),
+    "8x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(16)),
+    "8x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(32)),
+    "8x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(64)),
+
+    "16x8" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(8)),
+    "16x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(16)),
+    "16x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(32)),
+    "16x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(64)),
+
+    "32x8" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(8)),
+    "32x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(16)),
+    "32x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(32)),
+    "32x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(64)),
+
+    "64x8" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(8)),
+    "64x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(16)),
+    "64x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(32)),
+    "64x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(64))
+  )
+
+
+  // if output dir does not exist, make path
+  val javaOutputDir = new java.io.File(outputDir)
+  if (!javaOutputDir.exists) javaOutputDir.mkdirs
+
+  // ######### Set Up Top Module HERE #########
+  for ((name, myParams) <- configurations) {
+    ChiselStage.emitSystemVerilog(
+      new AddrDecode(myParams),
+      firtoolOpts = Array(
+        "--lowering-options=disallowLocalVariables,disallowPackedArrays",
+        "--disable-all-randomization",
+        "--strip-debug-info",
+        "--split-verilog",
+        s"-o=$outputDir/$name/"
+      )
+    )
+  }
+
+  // ##########################################
+  System.exit(0)
 }

@@ -1,10 +1,7 @@
 // (c) 2024 Rocksavage Technology, Inc.
 // This code is licensed under the Apache Software License 2.0 (see LICENSE.MD)
 
-package tech.rocksavage.chiselware.AddrDecode
-
-import chisel3._
-import chisel3.util._
+package tech.rocksavage.chiselware.addrdecode
 
 /** Default parameter settings for the AddressDecoder
   *
@@ -14,6 +11,8 @@ import chisel3.util._
   *   specifies the width of the data bus
   * @param addressWidth
   *   specifies the width of the address bus
+ *  @param memorySizes
+ *    specifies the size of each memory range
   * @author
   *   Warren Savage
   * @version 1.0
@@ -22,20 +21,12 @@ import chisel3.util._
   *   [[http://www.rocksavage.tech]] for more information
   */
 case class BaseParams(
-    dataWidth: Int = 8,
-    addressWidth: Int = 8,
-
-    // module params
-    max_delay: Int = 8,
-
-    // Verilog Blackbox files
-//    bbFiles: List[String] = List("dual_port_sync_sram.v")
+   dataWidth: Int = 8,
+   addressWidth: Int = 8,
+   memorySizes: Seq[Int] = Seq(32, 32, 32, 32, 32, 32, 32, 32),
 ) {
 
   require(dataWidth >= 1, "Data Width must be greater than or equal 1")
   require(addressWidth >= 1, "Address Width must be greater than or equal 1")
-
-  // module params
-  require(max_delay >= 1, "Max Delay must be greater than or equal 1")
 
 }

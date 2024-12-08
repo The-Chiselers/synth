@@ -1,31 +1,29 @@
 // (c) 2024 Rocksavage Technology, Inc.
 // This code is licensed under the Apache Software License 2.0 (see LICENSE.MD)
 
-package tech.rocksavage.chiselware.AddrDecode
+package tech.rocksavage.chiselware.addrdecode
 
 import chisel3._
-import chisel3.util._
 
 /** Blackbox to hold Verilog simulation model */
 class Memory(p: BaseParams, totalSize: Int) extends Module {
   val io = IO(new Bundle {
-    val clk           = Input(Clock())
-    val read_enable   = Input(Bool())
-    val write_enable  = Input(Bool())
-    val read_address  = Input(UInt(p.addressWidth.W))
-    val write_address = Input(UInt(p.addressWidth.W))
-    val write_data    = Input(UInt(p.dataWidth.W))
-    val read_data     = Output(UInt(p.dataWidth.W))
+    val readEnable: Bool = Input(Bool())
+    val writeEnable: Bool = Input(Bool())
+    val readAddress: UInt = Input(UInt(p.addressWidth.W))
+    val writeAddress: UInt = Input(UInt(p.addressWidth.W))
+    val writeData: UInt = Input(UInt(p.dataWidth.W))
+    val readData: UInt = Output(UInt(p.dataWidth.W))
   })
 
-    val memory = SyncReadMem(totalSize, UInt(p.dataWidth.W))
+  private val memory = SyncReadMem(totalSize, UInt(p.dataWidth.W))
 
-    when(io.read_enable) {
-      io.read_data := memory.read(io.read_address)
-    }
+  when(io.readEnable) {
+    io.readData := memory.read(io.readAddress)
+  }
 
-    when(io.write_enable) {
-      memory.write(io.write_address, io.write_data)
-    }
+  when(io.writeEnable) {
+    memory.write(io.writeAddress, io.writeData)
+  }
 
 }
