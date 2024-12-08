@@ -333,7 +333,7 @@ object Main extends App {
   // Synth
   var SynthResults = scala.collection.mutable.Map[String, SynthResult]()
   for ((name, _) <- configurations) {
-    val synth = new Synth("AddrDecode", files(name))
+    val synth = new Synth(s"$outputDir/$name/", "AddrDecode")
     synth.requirements()
     val config = new SynthConfig("synth/stdcells.lib")
 

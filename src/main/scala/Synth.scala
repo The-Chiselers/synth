@@ -5,17 +5,17 @@ package tech.rocksavage.chiselware.addrdecode
 
 import chisel3._
 
-import sys.process._
+import scala.sys.process._
 
 // run instructions:
 // sbt "runMain tech.rocksavage.chiselware.addrdecode."
-class Synth(moduleName: String, moduleVerilogString: String) {
+class Synth(synthDir: String, moduleName: String) {
+  val filelistPath = s"$synthDir/filelist.f"
   def requirements(): Unit = {
     // require yosys is installed, send stdout to /dev/null
     val yosys = "yosys -h".!(ProcessLogger(stdout => ()))
     require(yosys == 0, "Yosys is not installed")
-    // test if moduleVerilogString is valid
-    require(moduleVerilogString.nonEmpty, "Module verilog string is empty")
+    require(new java.io.File(filelistPath).exists, s"Filelist $filelistPath does not exist")
   }
 
   // run synthesis with this config, capture the generated file and the stdout,
@@ -46,11 +46,6 @@ class Synth(moduleName: String, moduleVerilogString: String) {
 // yosys -Qv 1 ${BUILD_ROOT}/synth/synth.tcl -p "tee -o ${BUILD_ROOT}/synth/synth.rpt stat"
 
   def synth(config: SynthConfig): SynthResult = {
-    val tempModule     = java.io.File.createTempFile("module", ".v")
-    val tempModulePath = tempModule.getAbsolutePath
-    val tempModuleFile = new java.io.PrintWriter(tempModulePath)
-    tempModuleFile.write(moduleVerilogString)
-    tempModuleFile.close()
 
     val techLibPath = config.techlibPath
 
@@ -66,7 +61,10 @@ class Synth(moduleName: String, moduleVerilogString: String) {
     tempTclFile.write(s"set top $moduleName\n")
     tempTclFile.write(s"set techLib $techLibPath\n")
     tempTclFile.write("yosys -import\n")
-    tempTclFile.write(s"read_verilog -sv $tempModulePath\n")
+    tempTclFile.write(s"set f [open $filelistPath]\n")
+    tempTclFile.write("while {[gets $f line] > -1} {\n")
+    tempTclFile.write("  read_verilog -sv $line\n")
+    tempTclFile.write("}\n")
     tempTclFile.write("hierarchy -check -top $top\n")
     tempTclFile.write("synth -top $top\n")
     tempTclFile.write("flatten\n")
@@ -78,12 +76,13 @@ class Synth(moduleName: String, moduleVerilogString: String) {
     tempTclFile.write("stat -liberty $techLib\n")
     tempTclFile.close()
 
-    // run the synthesis and capture the stdout
-    val cmd = s"yosys -Qv 1 $tempTclPath -p 'tee -o $tempStdoutPath stat'"
-    // print(cmd)
-    val exitCode = cmd.!(ProcessLogger(stdout => ()))
 
-    // check if the synthesis was successful
+
+
+
+    // run the synthesis and capture the stdout to tempStdoutPath
+    val cmd = s"yosys -Qv 1 $tempTclPath -p 'tee -o $tempStdoutPath stat'"
+    val exitCode = Process(cmd, new java.io.File(synthDir)).!
     if (exitCode != 0) {
       throw new Exception(s"Yosys failed with exit code $exitCode")
     }
