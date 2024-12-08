@@ -13,7 +13,7 @@ class AddrDecodeTest
 
     val addrWidth: Int  = 32
     val dataWidth: Int  = 32
-    val sizes: Seq[Int] = Seq(32, 32, 32, 32, 32, 32)
+    val sizes: Seq[Int] = Seq.fill(64)(64)
 
     val p = BaseParams(dataWidth, addrWidth, sizes)
 
