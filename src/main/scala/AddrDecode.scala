@@ -38,8 +38,14 @@ class AddrDecode(
         ranges :+ (ranges(i - 1)._2 + 1, ranges(i - 1)._2 + p.memorySizes(i))
     }
   }
-  assert(ranges.nonEmpty, "At least one range must be provided")
+
   val totalMemorySize: Int = p.memorySizes.sum
+
+  require(ranges.nonEmpty, "At least one range must be provided")
+  require(
+      totalMemorySize <= math.pow(2, p.addressWidth),
+      "Address space is not large enough to hold all ranges"
+  )
 
   /** Returns the number of memory addresses used by the module
     *
@@ -306,7 +312,8 @@ object Main extends App {
   val javaOutputDir = new java.io.File(outputDir)
   if (!javaOutputDir.exists) javaOutputDir.mkdirs
 
-  // ######### Set Up Top Module HERE #########
+  // ######### Export to Files #########
+  val files = scala.collection.mutable.Map[String, String]()
   for ((name, myParams) <- configurations) {
     ChiselStage.emitSystemVerilog(
       new AddrDecode(myParams),
@@ -318,6 +325,31 @@ object Main extends App {
         s"-o=$outputDir/$name/"
       )
     )
+    val verilog =
+      scala.io.Source.fromFile(s"$outputDir/$name/AddrDecode.sv").mkString
+    files += (name -> verilog)
+  }
+
+  // Synth
+  var SynthResults = scala.collection.mutable.Map[String, SynthResult]()
+  for ((name, _) <- configurations) {
+    val synth = new Synth("AddrDecode", files(name))
+    synth.requirements()
+    val config = new SynthConfig("synth/stdcells.lib")
+
+    SynthResults += (name -> synth.synth(config))
+
+    // create directory and write file
+    val synthDir = s"$outputUnwrapped/synth/$name"
+    if (!new java.io.File(synthDir).exists) new java.io.File(synthDir).mkdirs
+    val synthFile = new java.io.PrintWriter(s"$synthDir/AddrDecode_net.v")
+    synthFile.write(SynthResults(name).file)
+    synthFile.close()
+
+    // write stdout
+    val stdoutFile = new java.io.PrintWriter(s"$synthDir/stdout.txt")
+    stdoutFile.write(SynthResults(name).stdout)
+    stdoutFile.close()
   }
 
   // ##########################################
