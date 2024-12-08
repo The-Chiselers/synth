@@ -11,8 +11,8 @@ package tech.rocksavage.chiselware.addrdecode
   *   specifies the width of the data bus
   * @param addressWidth
   *   specifies the width of the address bus
- *  @param memorySizes
- *    specifies the size of each memory range
+  * @param memorySizes
+  *   specifies the size of each memory range
   * @author
   *   Warren Savage
   * @version 1.0
@@ -21,9 +21,9 @@ package tech.rocksavage.chiselware.addrdecode
   *   [[http://www.rocksavage.tech]] for more information
   */
 case class BaseParams(
-   dataWidth: Int = 8,
-   addressWidth: Int = 8,
-   memorySizes: Seq[Int] = Seq(32, 32, 32, 32, 32, 32, 32, 32),
+    dataWidth: Int = 8,
+    addressWidth: Int = 8,
+    memorySizes: Seq[Int] = Seq(32, 32, 32, 32, 32, 32, 32, 32)
 ) {
 
   require(dataWidth >= 1, "Data Width must be greater than or equal 1")

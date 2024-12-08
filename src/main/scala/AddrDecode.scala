@@ -34,7 +34,8 @@ class AddrDecode(
     if (i == 0) {
       ranges = ranges :+ (0, p.memorySizes(i) - 1)
     } else {
-      ranges = ranges :+ (ranges(i - 1)._2 + 1, ranges(i - 1)._2 + p.memorySizes(i))
+      ranges =
+        ranges :+ (ranges(i - 1)._2 + 1, ranges(i - 1)._2 + p.memorySizes(i))
     }
   }
   assert(ranges.nonEmpty, "At least one range must be provided")
@@ -264,7 +265,6 @@ class AddrDecode(
 }
 
 /** A main file to generate Verilog for an example address decoder
-  *
   */
 
 object Main extends App {
@@ -280,31 +280,27 @@ object Main extends App {
   val outputUnwrapped = output.get
   val outputDir       = s"$outputUnwrapped/verilog"
 
-  val dataWidth: Int  = 32
-  val addrWidth: Int  = 32
+  val dataWidth: Int = 32
+  val addrWidth: Int = 32
 
   val configurations = Map(
-    "8x8" -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(8)),
-    "8x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(16)),
-    "8x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(32)),
-    "8x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(64)),
-
-    "16x8" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(8)),
+    "8x8"   -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(8)),
+    "8x16"  -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(16)),
+    "8x32"  -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(32)),
+    "8x64"  -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(64)),
+    "16x8"  -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(8)),
     "16x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(16)),
     "16x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(32)),
     "16x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(64)),
-
-    "32x8" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(8)),
+    "32x8"  -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(8)),
     "32x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(16)),
     "32x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(32)),
     "32x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(64)),
-
-    "64x8" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(8)),
+    "64x8"  -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(8)),
     "64x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(16)),
     "64x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(32)),
     "64x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(64))
   )
-
 
   // if output dir does not exist, make path
   val javaOutputDir = new java.io.File(outputDir)
