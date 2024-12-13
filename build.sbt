@@ -1,6 +1,6 @@
 // See README.md for license details.
 
-ThisBuild / scalaVersion     := "2.13.13"
+ThisBuild / scalaVersion     := "2.13.15"
 ThisBuild / version          := "0.1.0"
 ThisBuild / organization     := "tech.rocksavage"
 ThisBuild / organizationName := "Rocksavage Technology"
@@ -16,7 +16,8 @@ lazy val root = (project in file("."))
     Test / publishArtifact := true,
     libraryDependencies ++= Seq(
       "org.chipsalliance" %% "chisel"     % chiselVersion,
-      "edu.berkeley.cs"   %% "chiseltest" % "6.0.0"
+      "edu.berkeley.cs"   %% "chiseltest" % "6.0.0",
+      "org.rogach"        %% "scallop"    % "5.2.0"
     ),
     scalacOptions ++= Seq(
       "-language:reflectiveCalls",

@@ -4,6 +4,7 @@ package tech.rocksavage.chiselware.addrdecode
 
 import chisel3._
 import circt.stage.ChiselStage
+import tech.rocksavage.synth.{Synth, SynthConfig, SynthResult}
 
 /** An address decoder that can be used to decode addresses into a set of ranges
   *
@@ -19,8 +20,8 @@ import circt.stage.ChiselStage
   *   Warren Savage
   */
 class AddrDecode(
-    p: BaseParams,
-    formal: Boolean = false
+                  p: AddrDecodeParams,
+                  formal: Boolean = false
 ) extends Module
     with Addressable {
 
@@ -290,22 +291,22 @@ object Main extends App {
   val addrWidth: Int = 32
 
   val configurations = Map(
-    "8x8"   -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(8)),
-    "8x16"  -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(16)),
-    "8x32"  -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(32)),
-    "8x64"  -> BaseParams(dataWidth, addrWidth, Seq.fill(8)(64)),
-    "16x8"  -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(8)),
-    "16x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(16)),
-    "16x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(32)),
-    "16x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(16)(64)),
-    "32x8"  -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(8)),
-    "32x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(16)),
-    "32x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(32)),
-    "32x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(32)(64)),
-    "64x8"  -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(8)),
-    "64x16" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(16)),
-    "64x32" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(32)),
-    "64x64" -> BaseParams(dataWidth, addrWidth, Seq.fill(64)(64))
+    "8x8"   -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(8)),
+    "8x16"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(16)),
+    "8x32"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(32)),
+    "8x64"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(64)),
+    "16x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(8)),
+    "16x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(16)),
+    "16x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(32)),
+    "16x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(64)),
+    "32x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(8)),
+    "32x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(16)),
+    "32x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(32)),
+    "32x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(64)),
+    "64x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(8)),
+    "64x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(16)),
+    "64x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(32)),
+    "64x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(64))
   )
 
   // if output dir does not exist, make path
