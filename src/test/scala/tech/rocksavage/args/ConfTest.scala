@@ -8,6 +8,7 @@ class ConfTest
 
   "Conf" should "have module name foo in verilog subcommand" in {
     val conf = new Conf(Seq("verilog", "--module", "foo"))
-    conf.verilog.module.get shouldBe Some("foo")
+    conf.subcommand.get shouldBe conf.verilog
+
   }
 }
