@@ -10,41 +10,47 @@ import tech.rocksavage.synth.{Synth, SynthConfig, SynthResult}
   *
   * @constructor
   *   Create a new address decoder
-  * @param p
+  * @param params
   *   BaseParams object including dataWidth and addressWidth
-  * @param sizes
-  *   A sequence of integers representing the size of each range
   * @param formal
   *   A boolean value to enable formal verification
   * @author
   *   Warren Savage
   */
 class AddrDecode(
-                  p: AddrDecodeParams,
-                  formal: Boolean = false
+  params: AddrDecodeParams,
+  formal: Boolean = false
 ) extends Module
     with Addressable {
+
+  // ###################
+  // Default Constructor
+  // ###################
+
+  def this() = {
+    this(AddrDecodeParams(), false)
+  }
 
   // ###################
   // Parameter checking & calculation
   // ###################
 
-  val lengthSel: Int          = p.memorySizes.length
+  val lengthSel: Int          = params.memorySizes.length
   var ranges: Seq[(Int, Int)] = Seq()
   for (i <- 0 until lengthSel) {
     if (i == 0) {
-      ranges = ranges :+ (0, p.memorySizes(i) - 1)
+      ranges = ranges :+ (0, params.memorySizes(i) - 1)
     } else {
       ranges =
-        ranges :+ (ranges(i - 1)._2 + 1, ranges(i - 1)._2 + p.memorySizes(i))
+        ranges :+ (ranges(i - 1)._2 + 1, ranges(i - 1)._2 + params.memorySizes(i))
     }
   }
 
-  val totalMemorySize: Int = p.memorySizes.sum
+  val totalMemorySize: Int = params.memorySizes.sum
 
   require(ranges.nonEmpty, "At least one range must be provided")
   require(
-      totalMemorySize <= math.pow(2, p.addressWidth),
+      totalMemorySize <= math.pow(2, params.addressWidth),
       "Address space is not large enough to hold all ranges"
   )
 
@@ -56,15 +62,15 @@ class AddrDecode(
   def memWidth(): Int = totalMemorySize
 
   val io = IO(new Bundle {
-    val addr       = Input(UInt(p.addressWidth.W))
-    val addrOffset = Input(UInt(p.addressWidth.W))
+    val addr       = Input(UInt(params.addressWidth.W))
+    val addrOffset = Input(UInt(params.addressWidth.W))
     val en         = Input(Bool())
     val selInput   = Input(Bool())
 
     val sel       = Output(Vec(lengthSel, Bool()))
-    val addrOut   = Output(UInt(p.addressWidth.W))
+    val addrOut   = Output(UInt(params.addressWidth.W))
     val errorCode = Output(AddrDecodeError())
-    val errorAddr = Output(UInt(p.addressWidth.W))
+    val errorAddr = Output(UInt(params.addressWidth.W))
   })
 
   /** Returns a vector of booleans representing the selected range
@@ -115,7 +121,7 @@ class AddrDecode(
       addrRanges: Seq[(Int, Int)],
       inputAddr: UInt
   ): UInt = {
-    val addrOut = Wire(UInt(p.addressWidth.W))
+    val addrOut = Wire(UInt(params.addressWidth.W))
     addrOut := 0.U
 
     for ((startAddr, endAddr) <- addrRanges) {
@@ -172,7 +178,7 @@ class AddrDecode(
       inputAddr: UInt,
       offsetAddr: UInt
   ): UInt = {
-    val errorAddr = Wire(UInt(p.addressWidth.W))
+    val errorAddr = Wire(UInt(params.addressWidth.W))
     errorAddr := 0.U
 
     val minAddr: Int = addrRanges.head._1
@@ -274,85 +280,85 @@ class AddrDecode(
 /** A main file to generate Verilog for an example address decoder
   */
 
-//object Main extends App {
-//
-//  // ######### Getting Setup #########
-//  // get build root, if not set use null
-//  var output = sys.env.get("BUILD_ROOT")
-//  if (output == null || output.isEmpty) {
-//    println("BUILD_ROOT not set, please set and run again")
-//    System.exit(1)
-//  }
-//  // set output directory
-//  val outputUnwrapped = output.get
-//  val outputDir       = s"$outputUnwrapped/verilog"
-//
-//  val dataWidth: Int = 32
-//  val addrWidth: Int = 32
-//
-//  val configurations = Map(
-//    "8x8"   -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(8)),
-//    "8x16"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(16)),
-//    "8x32"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(32)),
-//    "8x64"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(64)),
-//    "16x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(8)),
-//    "16x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(16)),
-//    "16x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(32)),
-//    "16x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(64)),
-//    "32x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(8)),
-//    "32x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(16)),
-//    "32x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(32)),
-//    "32x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(64)),
-//    "64x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(8)),
-//    "64x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(16)),
-//    "64x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(32)),
-//    "64x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(64))
-//  )
-//
-//  // if output dir does not exist, make path
-//  val javaOutputDir = new java.io.File(outputDir)
-//  if (!javaOutputDir.exists) javaOutputDir.mkdirs
-//
-//  // ######### Export to Files #########
-//  val files = scala.collection.mutable.Map[String, String]()
-//  for ((name, myParams) <- configurations) {
-//    ChiselStage.emitSystemVerilog(
-//      new AddrDecode(myParams),
-//      firtoolOpts = Array(
-//        "--lowering-options=disallowLocalVariables,disallowPackedArrays",
-//        "--disable-all-randomization",
-//        "--strip-debug-info",
-//        "--split-verilog",
-//        s"-o=$outputDir/$name/"
-//      )
-//    )
-//    val verilog =
-//      scala.io.Source.fromFile(s"$outputDir/$name/AddrDecode.sv").mkString
-//    files += (name -> verilog)
-//  }
-//
-//  // Synth
-//  var SynthResults = scala.collection.mutable.Map[String, SynthResult]()
-//  for ((name, _) <- configurations) {
-//    val synth = new Synth(s"$outputDir/$name/", "AddrDecode")
-//    synth.requirements()
-//    val config = new SynthConfig("synth/stdcells.lib")
-//
-//    SynthResults += (name -> synth.synth(config))
-//
-//    // create directory and write file
-//    val synthDir = s"$outputUnwrapped/synth/$name"
-//    if (!new java.io.File(synthDir).exists) new java.io.File(synthDir).mkdirs
-//    val synthFile = new java.io.PrintWriter(s"$synthDir/AddrDecode_net.v")
-//    synthFile.write(SynthResults(name).file)
-//    synthFile.close()
-//
-//    // write stdout
-//    val stdoutFile = new java.io.PrintWriter(s"$synthDir/stdout.txt")
-//    stdoutFile.write(SynthResults(name).stdout)
-//    stdoutFile.close()
-//  }
-//
-//  // ##########################################
-//  System.exit(0)
-//}
+object Main extends App {
+
+  // ######### Getting Setup #########
+  // get build root, if not set use null
+  var output = sys.env.get("BUILD_ROOT")
+  if (output == null || output.isEmpty) {
+    println("BUILD_ROOT not set, please set and run again")
+    System.exit(1)
+  }
+  // set output directory
+  val outputUnwrapped = output.get
+  val outputDir       = s"$outputUnwrapped/verilog"
+
+  val dataWidth: Int = 32
+  val addrWidth: Int = 32
+
+  val configurations = Map(
+    "8x8"   -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(8)),
+    "8x16"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(16)),
+    "8x32"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(32)),
+    "8x64"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(8)(64)),
+    "16x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(8)),
+    "16x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(16)),
+    "16x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(32)),
+    "16x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(16)(64)),
+    "32x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(8)),
+    "32x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(16)),
+    "32x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(32)),
+    "32x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(32)(64)),
+    "64x8"  -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(8)),
+    "64x16" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(16)),
+    "64x32" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(32)),
+    "64x64" -> AddrDecodeParams(dataWidth, addrWidth, Seq.fill(64)(64))
+  )
+
+  // if output dir does not exist, make path
+  val javaOutputDir = new java.io.File(outputDir)
+  if (!javaOutputDir.exists) javaOutputDir.mkdirs
+
+  // ######### Export to Files #########
+  val files = scala.collection.mutable.Map[String, String]()
+  for ((name, myParams) <- configurations) {
+    ChiselStage.emitSystemVerilog(
+      new AddrDecode(myParams),
+      firtoolOpts = Array(
+        "--lowering-options=disallowLocalVariables,disallowPackedArrays",
+        "--disable-all-randomization",
+        "--strip-debug-info",
+        "--split-verilog",
+        s"-o=$outputDir/$name/"
+      )
+    )
+    val verilog =
+      scala.io.Source.fromFile(s"$outputDir/$name/AddrDecode.sv").mkString
+    files += (name -> verilog)
+  }
+
+  // Synth
+  var SynthResults = scala.collection.mutable.Map[String, SynthResult]()
+  for ((name, _) <- configurations) {
+    val synth = new Synth(s"$outputDir/$name/", "AddrDecode")
+    synth.requirements()
+    val config = new SynthConfig("synth/stdcells.lib")
+
+    SynthResults += (name -> synth.synth(config))
+
+    // create directory and write file
+    val synthDir = s"$outputUnwrapped/synth/$name"
+    if (!new java.io.File(synthDir).exists) new java.io.File(synthDir).mkdirs
+    val synthFile = new java.io.PrintWriter(s"$synthDir/AddrDecode_net.v")
+    synthFile.write(SynthResults(name).file)
+    synthFile.close()
+
+    // write stdout
+    val stdoutFile = new java.io.PrintWriter(s"$synthDir/stdout.txt")
+    stdoutFile.write(SynthResults(name).stdout)
+    stdoutFile.close()
+  }
+
+  // ##########################################
+  System.exit(0)
+}
