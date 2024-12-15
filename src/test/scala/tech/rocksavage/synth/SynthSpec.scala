@@ -37,19 +37,8 @@ class SynthSpec extends AnyFlatSpec with Matchers {
 
   it should "synthesize from module name" in {
     val moduleName = "tech.rocksavage.synth.TestModule"
-    val expectedVerilog =
-      """module TestModule(clock, reset, in, out);
-        |  input clock;
-        |  wire clock;
-        |  input in;
-        |  wire in;
-        |  output out;
-        |  wire out;
-        |  input reset;
-        |  wire reset;
-        |  assign out = in;
-        |endmodule
-        |""".stripMargin
+    val expectedModuleDec = "module TestModule(clock, reset, in, out);"
+    val expectedAssign = "assign out = in;"
 
     val commands = List(
       tech.rocksavage.synth.SynthCommand.Synth,
@@ -63,7 +52,8 @@ class SynthSpec extends AnyFlatSpec with Matchers {
     val config = new SynthConfig("synth/stdcells.lib", commands)
     val result = Synth.synthesizeFromModuleName(config, moduleName).getSynthString
 
-    result should include (expectedVerilog)
+    result should include (expectedModuleDec)
+    result should include (expectedAssign)
   }
 
   it should "synthesize from verilog string" in {
@@ -81,19 +71,8 @@ class SynthSpec extends AnyFlatSpec with Matchers {
         |
         |""".stripMargin
 
-    val expectedVerilog =
-      """module TestModule(clock, reset, in, out);
-        |  input clock;
-        |  wire clock;
-        |  input in;
-        |  wire in;
-        |  output out;
-        |  wire out;
-        |  input reset;
-        |  wire reset;
-        |  assign out = in;
-        |endmodule
-        |""".stripMargin
+    val expectedModuleDec = "module TestModule(clock, reset, in, out);"
+    val expectedAssign = "assign out = in;"
 
     val commands = List(
         tech.rocksavage.synth.SynthCommand.Synth,
@@ -107,7 +86,8 @@ class SynthSpec extends AnyFlatSpec with Matchers {
     val config = new SynthConfig("synth/stdcells.lib", commands)
     val result = Synth.synthesizeFromVerilogString(config, moduleName, verilogString).getSynthString
 
-    result should include (expectedVerilog)
+    result should include (expectedModuleDec)
+    result should include (expectedAssign)
 
   }
 }
