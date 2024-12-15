@@ -3,4 +3,7 @@
 
 package tech.rocksavage.synth
 
-class SynthResult(val file: String, val stdout: String) {}
+class SynthResult(synthString: String, stdout: String) {
+  def getSynthString: String = synthString
+  def getStdout: String = stdout
+}

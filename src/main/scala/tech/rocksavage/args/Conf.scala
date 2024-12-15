@@ -11,6 +11,7 @@ class Conf(arguments: Seq[String]) extends ScallopConf(arguments) {
 
   object synth extends Subcommand("synth") {
     val module = opt[String](required = true)
+    var techlib = opt[String](required = true)
   }
 
   addSubcommand(verilog)

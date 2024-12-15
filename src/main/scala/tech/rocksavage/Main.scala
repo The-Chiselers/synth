@@ -5,6 +5,7 @@ import chisel3._
 import java.io.File
 import tech.rocksavage.args.Conf
 import tech.rocksavage.chiselware.addrdecode.AddrDecode
+import tech.rocksavage.synth.{Synth, SynthConfig, SynthResult}
 
 import scala.sys.exit
 
@@ -28,7 +29,22 @@ object Main {
         }
       }
       case Some(conf.synth) => {
-        println("Synthesizing " + conf.synth.module())
+        val synthCommands = List(
+          tech.rocksavage.synth.SynthCommand.Synth,
+          tech.rocksavage.synth.SynthCommand.Flatten,
+          tech.rocksavage.synth.SynthCommand.Dfflibmap,
+          tech.rocksavage.synth.SynthCommand.Abc,
+          tech.rocksavage.synth.SynthCommand.Opt,
+          tech.rocksavage.synth.SynthCommand.Clean,
+          tech.rocksavage.synth.SynthCommand.Stat
+        )
+        val synthConfig = new tech.rocksavage.synth.SynthConfig(
+          conf.synth.techlib(),
+          synthCommands
+        )
+        val synth = synthesize(synthConfig, conf.synth.module())
+        println(synth.getStdout)
+        println(synth.getSynthString)
       }
       case _ => {
         println("No subcommand given")
@@ -37,7 +53,6 @@ object Main {
   }
 
   def genVerilog(moduleName: String, params: Any*): String = {
-
     val clazz = Class.forName(moduleName).asSubclass(classOf[RawModule])
     val constructors = clazz.getConstructors
     var verilog = ""
@@ -46,14 +61,28 @@ object Main {
         verilog = getVerilogString(c.newInstance(params: _*).asInstanceOf[RawModule])
       } catch {
         case e: java.lang.IllegalArgumentException => {
-          println("Constructor " + c + " failed")
+          println("Constructor " + c + " failed: " + e)
         }
       }
     }
-    // Generate Verilog
-//    val verilog = getVerilogString(constructors(1).newInstance().asInstanceOf[RawModule])
-
     verilog
+  }
+
+  def synthesize(synthConfig: SynthConfig, moduleName: String, params: Any*): SynthResult = {
+    val clazz = Class.forName(moduleName).asSubclass(classOf[RawModule])
+    val constructors = clazz.getConstructors
+    val className = clazz.getName.split('.').last
+    var verilog = ""
+    for (c <- constructors) {
+      try {
+        verilog = getVerilogString(c.newInstance(params: _*).asInstanceOf[RawModule])
+      } catch {
+        case e: java.lang.IllegalArgumentException => {
+          println("Constructor " + c + " failed: " + e)
+        }
+      }
+    }
+    Synth.synthesize(className, verilog, synthConfig)
   }
 }
 

@@ -3,99 +3,55 @@
 
 package tech.rocksavage.synth
 
+import chisel3.RawModule
+import circt.stage.ChiselStage
+import tech.rocksavage.util.Util.{runCommand, which}
+
+import scala.sys.exit
 import scala.sys.process._
 
-// run instructions:
-// sbt "runMain tech.rocksavage.chiselware.addrdecode."
-class Synth(synthDir: String, moduleName: String) {
-  val filelistPath = s"$synthDir/filelist.f"
-  def requirements(): Unit = {
-    // require yosys is installed, send stdout to /dev/null
-    val yosys = "yosys -h".!(ProcessLogger(stdout => ()))
-    require(yosys == 0, "Yosys is not installed")
-    require(new java.io.File(filelistPath).exists, s"Filelist $filelistPath does not exist")
-  }
+object Synth {
+  def synthesize(topName: String, verilogString: String, config: SynthConfig): SynthResult = {
 
-  // run synthesis with this config, capture the generated file and the stdout,
-  // use temporary files to store the generated file
 
-  // want to basically do what this script would do:
-//   # Setting up synth.tcl
-// echo "set top ${TOP}" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "set techLib ${PROJECT_ROOT}/synth/stdcells.lib" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "yosys -import" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "set f [open ${BUILD_ROOT}/verilog/filelist.f]" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "while {[gets \$f line] > -1} {" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "  read_verilog -sv ${BUILD_ROOT}/verilog/\$line" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "}" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "close \$f" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "hierarchy -check -top \$top" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "synth -top \$top" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "flatten" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "dfflibmap -liberty \$techLib" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "abc -liberty \$techLib" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "opt_clean -purge" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "write_verilog -noattr \$top\_net.v" >> ${BUILD_ROOT}/synth/synth.tcl
-// echo "stat -liberty \$techLib" >> ${BUILD_ROOT}/synth/synth.tcl
+    val tempTop = java.io.File.createTempFile(s"$topName", ".sv")
+    val topPath = tempTop.getAbsolutePath
+    val topFile = new java.io.PrintWriter(topPath)
+    topFile.write(verilogString)
+    topFile.close()
 
-// # Running Synthesis
-// cd ${BUILD_ROOT}/synth
-// mkdir -p ${BUILD_ROOT}/synth/
-// yosys -Qv 1 ${BUILD_ROOT}/synth/synth.tcl -p "tee -o ${BUILD_ROOT}/synth/synth.rpt stat"
+    val tempSynthOut = java.io.File.createTempFile(s"$topName"+"_net", ".v")
+    val synthOutPath = tempSynthOut.getAbsolutePath
 
-  def synth(config: SynthConfig): SynthResult = {
-
-    val techLibPath = config.techlibPath
-
-    val tempSynthFile = java.io.File.createTempFile("module_net", ".v")
-    val tempSynthPath = tempSynthFile.getAbsolutePath
-
-    val tempStdoutFile = java.io.File.createTempFile("stdout", ".txt")
-    val tempStdoutPath = tempStdoutFile.getAbsolutePath
-
-    val tempTcl     = java.io.File.createTempFile("synth", ".tcl")
+    val configString = config.toString(topName, topPath, synthOutPath)
+    val tempTcl = java.io.File.createTempFile("synth", ".tcl")
     val tempTclPath = tempTcl.getAbsolutePath
     val tempTclFile = new java.io.PrintWriter(tempTclPath)
-    tempTclFile.write(s"set top $moduleName\n")
-    tempTclFile.write(s"set techLib $techLibPath\n")
-    tempTclFile.write("yosys -import\n")
-    tempTclFile.write(s"set f [open $filelistPath]\n")
-    tempTclFile.write("while {[gets $f line] > -1} {\n")
-    tempTclFile.write("  read_verilog -sv $line\n")
-    tempTclFile.write("}\n")
-    tempTclFile.write("hierarchy -check -top $top\n")
-    tempTclFile.write("synth -top $top\n")
-    tempTclFile.write("flatten\n")
-    tempTclFile.write("dfflibmap -liberty $techLib\n")
-    tempTclFile.write("abc -liberty $techLib\n")
-    tempTclFile.write("opt_clean -purge\n")
-
-    tempTclFile.write(s"write_verilog -noattr $tempSynthPath\n")
-    tempTclFile.write("stat -liberty $techLib\n")
+    tempTclFile.write(configString)
     tempTclFile.close()
 
-
-
-
-
-    // run the synthesis and capture the stdout to tempStdoutPath
-    val cmd = s"yosys -Qv 1 $tempTclPath -p 'tee -o $tempStdoutPath stat'"
-    val exitCode = Process(cmd, new java.io.File(synthDir)).!
-    if (exitCode != 0) {
-      throw new Exception(s"Yosys failed with exit code $exitCode")
+    val yosysPath = which("yosys") match {
+      case Some(path) => path
+      case None =>
+        println("Yosys not found in PATH")
+        exit(1)
     }
 
-    // read the generated file
-    val synthFile   = scala.io.Source.fromFile(tempSynthPath)
+    val command = Seq(yosysPath, tempTclPath)
+    val res = runCommand(command)
+    val exitCode = res._1
+    val stdout = res._2
+    val stderr = res._3
+
+    if (exitCode != 0) {
+      println(s"Error running yosys command: $command, stdout: $stdout, stderr: $stderr")
+      exit(1)
+    }
+
+    val synthFile = scala.io.Source.fromFile(topPath)
     val synthString = synthFile.mkString
     synthFile.close()
 
-    val stdoutFile = scala.io.Source.fromFile(tempStdoutPath)
-    val stdout     = stdoutFile.mkString
-    stdoutFile.close()
-
-    // return the result
     new SynthResult(synthString, stdout)
   }
-
 }

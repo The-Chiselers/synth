@@ -338,26 +338,26 @@ object Main extends App {
   }
 
   // Synth
-  var SynthResults = scala.collection.mutable.Map[String, SynthResult]()
-  for ((name, _) <- configurations) {
-    val synth = new Synth(s"$outputDir/$name/", "AddrDecode")
-    synth.requirements()
-    val config = new SynthConfig("synth/stdcells.lib")
-
-    SynthResults += (name -> synth.synth(config))
-
-    // create directory and write file
-    val synthDir = s"$outputUnwrapped/synth/$name"
-    if (!new java.io.File(synthDir).exists) new java.io.File(synthDir).mkdirs
-    val synthFile = new java.io.PrintWriter(s"$synthDir/AddrDecode_net.v")
-    synthFile.write(SynthResults(name).file)
-    synthFile.close()
-
-    // write stdout
-    val stdoutFile = new java.io.PrintWriter(s"$synthDir/stdout.txt")
-    stdoutFile.write(SynthResults(name).stdout)
-    stdoutFile.close()
-  }
+//  var SynthResults = scala.collection.mutable.Map[String, SynthResult]()
+//  for ((name, _) <- configurations) {
+//    val synth = new Synth(s"$outputDir/$name/", "AddrDecode")
+//    synth.requirements()
+//    val config = new SynthConfig("synth/stdcells.lib")
+//
+//    SynthResults += (name -> synth.synth(config))
+//
+//    // create directory and write file
+//    val synthDir = s"$outputUnwrapped/synth/$name"
+//    if (!new java.io.File(synthDir).exists) new java.io.File(synthDir).mkdirs
+//    val synthFile = new java.io.PrintWriter(s"$synthDir/AddrDecode_net.v")
+//    synthFile.write(SynthResults(name).file)
+//    synthFile.close()
+//
+//    // write stdout
+//    val stdoutFile = new java.io.PrintWriter(s"$synthDir/stdout.txt")
+//    stdoutFile.write(SynthResults(name).stdout)
+//    stdoutFile.close()
+//  }
 
   // ##########################################
   System.exit(0)
