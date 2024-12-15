@@ -4,11 +4,9 @@
 package tech.rocksavage.synth
 
 import chisel3.{RawModule, getVerilogString}
-import circt.stage.ChiselStage
 import tech.rocksavage.util.Util.{runCommand, which}
 
 import scala.sys.exit
-import scala.sys.process._
 
 object Synth {
   def genVerilogFromModuleName(moduleName: String, params: Any*): String = {
