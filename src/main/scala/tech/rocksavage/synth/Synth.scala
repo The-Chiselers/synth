@@ -11,7 +11,7 @@ import scala.sys.exit
 import scala.sys.process._
 
 object Synth {
-  def genVerilog(moduleName: String, params: Any*): String = {
+  def genVerilogFromModuleName(moduleName: String, params: Any*): String = {
     val clazz = Class.forName(moduleName).asSubclass(classOf[RawModule])
     val constructors = clazz.getConstructors
     var verilog = ""
