@@ -1,7 +1,3 @@
-# AddressDecoder
+# Synth
 
-A highly configurable Address Decoder written in Chisel3.
-
-## TODO
-
-- [ ] Add more scaladoc
+A configurable module to run synthesis with Yosys directly in SBT
