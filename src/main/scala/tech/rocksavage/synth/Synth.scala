@@ -1,9 +1,7 @@
-// (c) 2024 Rocksavage Technology, Inc.
-// This code is licensed under the Apache Software License 2.0 (see LICENSE.MD)
-
 package tech.rocksavage.synth
 
-import chisel3.{RawModule, getVerilogString}
+import chisel3.RawModule
+import circt.stage.ChiselStage
 import tech.rocksavage.util.Util.{runCommand, which}
 
 import scala.sys.exit
@@ -15,7 +13,11 @@ object Synth {
     var verilog = ""
     for (c <- constructors) {
       try {
-        verilog = getVerilogString(c.newInstance(params: _*).asInstanceOf[RawModule])
+        verilog = ChiselStage.emitSystemVerilog(c.newInstance(params: _*).asInstanceOf[RawModule], firtoolOpts = Array(
+          "--lowering-options=disallowLocalVariables,disallowPackedArrays",
+          "--disable-all-randomization",
+          "--strip-debug-info",
+        ))
       } catch {
         case e: java.lang.IllegalArgumentException => {
           println("Constructor " + c + " failed: " + e)
@@ -32,7 +34,11 @@ object Synth {
     var verilog = ""
     for (c <- constructors) {
       try {
-        verilog = getVerilogString(c.newInstance(params: _*).asInstanceOf[RawModule])
+        verilog = ChiselStage.emitSystemVerilog(c.newInstance(params: _*).asInstanceOf[RawModule], firtoolOpts = Array(
+          "--lowering-options=disallowLocalVariables,disallowPackedArrays",
+          "--disable-all-randomization",
+          "--strip-debug-info",
+        ))
       } catch {
         case e: java.lang.IllegalArgumentException => {
           println("Constructor " + c + " failed: " + e)
@@ -61,9 +67,7 @@ object Synth {
 
     val yosysPath = which("yosys") match {
       case Some(path) => path
-      case None =>
-        println("Yosys not found in PATH")
-        exit(1)
+      case None => println("Yosys not found in PATH"); exit(1)
     }
 
     val command = Seq(yosysPath, tempTclPath)
