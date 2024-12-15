@@ -41,10 +41,10 @@ object Synth {
         }
       }
     }
-    synthesize(className, verilog, synthConfig)
+    synthesizeFromVerilogString(synthConfig, className, verilog)
   }
 
-  def synthesize(topName: String, verilogString: String, config: SynthConfig): SynthResult = {
+  def synthesizeFromVerilogString(config: SynthConfig, topName: String, verilogString: String): SynthResult = {
     val tempTop = java.io.File.createTempFile(s"$topName", ".sv")
     val topPath = tempTop.getAbsolutePath
     val topFile = new java.io.PrintWriter(topPath)
