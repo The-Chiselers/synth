@@ -45,7 +45,7 @@ object Main {
       println(s"constructor: $c")
     }
     // Generate Verilog
-    val verilog = emitVerilog(constructors(1).newInstance().asInstanceOf[RawModule])
+    val verilog = getVerilogString(constructors(1).newInstance().asInstanceOf[RawModule])
 
     verilog
   }
