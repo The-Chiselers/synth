@@ -3,7 +3,7 @@
 
 package tech.rocksavage.synth
 
-import chisel3.RawModule
+import chisel3.{RawModule, getVerilogString}
 import circt.stage.ChiselStage
 import tech.rocksavage.util.Util.{runCommand, which}
 
@@ -11,9 +11,40 @@ import scala.sys.exit
 import scala.sys.process._
 
 object Synth {
+  def genVerilog(moduleName: String, params: Any*): String = {
+    val clazz = Class.forName(moduleName).asSubclass(classOf[RawModule])
+    val constructors = clazz.getConstructors
+    var verilog = ""
+    for (c <- constructors) {
+      try {
+        verilog = getVerilogString(c.newInstance(params: _*).asInstanceOf[RawModule])
+      } catch {
+        case e: java.lang.IllegalArgumentException => {
+          println("Constructor " + c + " failed: " + e)
+        }
+      }
+    }
+    verilog
+  }
+
+  def synthesizeFromModuleName(synthConfig: SynthConfig, moduleName: String, params: Any*): SynthResult = {
+    val clazz = Class.forName(moduleName).asSubclass(classOf[RawModule])
+    val constructors = clazz.getConstructors
+    val className = clazz.getName.split('.').last
+    var verilog = ""
+    for (c <- constructors) {
+      try {
+        verilog = getVerilogString(c.newInstance(params: _*).asInstanceOf[RawModule])
+      } catch {
+        case e: java.lang.IllegalArgumentException => {
+          println("Constructor " + c + " failed: " + e)
+        }
+      }
+    }
+    synthesize(className, verilog, synthConfig)
+  }
+
   def synthesize(topName: String, verilogString: String, config: SynthConfig): SynthResult = {
-
-
     val tempTop = java.io.File.createTempFile(s"$topName", ".sv")
     val topPath = tempTop.getAbsolutePath
     val topFile = new java.io.PrintWriter(topPath)
