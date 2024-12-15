@@ -48,7 +48,7 @@ object Synth {
       exit(1)
     }
 
-    val synthFile = scala.io.Source.fromFile(topPath)
+    val synthFile = scala.io.Source.fromFile(synthOutPath)
     val synthString = synthFile.mkString
     synthFile.close()
 
