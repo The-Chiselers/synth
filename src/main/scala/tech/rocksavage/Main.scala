@@ -40,12 +40,18 @@ object Main {
 
     val clazz = Class.forName(moduleName).asSubclass(classOf[RawModule])
     val constructors = clazz.getConstructors
+    var verilog = ""
     for (c <- constructors) {
-      println(params)
-      println(s"constructor: $c")
+      try {
+        verilog = getVerilogString(c.newInstance(params: _*).asInstanceOf[RawModule])
+      } catch {
+        case e: java.lang.IllegalArgumentException => {
+          println("Constructor " + c + " failed")
+        }
+      }
     }
     // Generate Verilog
-    val verilog = getVerilogString(constructors(1).newInstance().asInstanceOf[RawModule])
+//    val verilog = getVerilogString(constructors(1).newInstance().asInstanceOf[RawModule])
 
     verilog
   }
