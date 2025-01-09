@@ -7,6 +7,11 @@ import tech.rocksavage.util.Util.{runCommand, which}
 import scala.sys.exit
 
 object Synth {
+  var nand2Area: Double = 0.798 // Nangate 45nm
+  def setNand2Area(area: Double): Unit = {
+    nand2Area = area
+  }
+
   def genVerilogFromModuleName(moduleName: String, params: Any*): String = {
     val clazz = Class.forName(moduleName).asSubclass(classOf[RawModule])
     val constructors = clazz.getConstructors
@@ -85,6 +90,12 @@ object Synth {
     val synthString = synthFile.mkString
     synthFile.close()
 
-    new SynthResult(synthString, stdout)
+    // Extract area and calculate gates
+    val areaLine = stdout.split("\n").find(_.contains("Chip area")).getOrElse("")
+    val floatArea = areaLine.split(":")(1).trim.toDouble
+    val intArea = floatArea.toInt
+    val gates = (intArea / nand2Area).toInt
+
+    new SynthResult(synthString, stdout, gates)
   }
 }
