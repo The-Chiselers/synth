@@ -81,6 +81,10 @@ object Synth {
     val stdout = res._2
     val stderr = res._3
 
+    println(stdout)
+    println(stderr)
+    println(exitCode)
+
     if (exitCode != 0) {
       println(s"Error running yosys command: $command, stdout: $stdout, stderr: $stderr")
       exit(1)
@@ -91,10 +95,16 @@ object Synth {
     synthFile.close()
 
     // Extract area and calculate gates
-    val areaLine = stdout.split("\n").find(_.contains("Chip area")).getOrElse("")
-    val floatArea = areaLine.split(":")(1).trim.toDouble
-    val intArea = floatArea.toInt
-    val gates = (intArea / nand2Area).toInt
+
+    val areaLine = stdout.split("\n").find(_.contains("Chip area"))
+    val gates = areaLine match {
+      case Some(line) => {
+        val floatArea = line.split(":")(1).trim.toDouble
+        val intArea = floatArea.toInt
+        Some((intArea / nand2Area).toInt)
+      }
+      case None => None
+    }
 
     new SynthResult(synthString, stdout, gates)
   }
