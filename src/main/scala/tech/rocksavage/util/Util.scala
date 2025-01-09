@@ -1,6 +1,7 @@
 package tech.rocksavage.util
 
 import java.io.{ByteArrayOutputStream, PrintWriter}
+import scala.util.Using
 import sys.process._
 
 object Util {
@@ -13,15 +14,11 @@ object Util {
     resultUnix.orElse(resultWindows)
   }
 
-
   def runCommand(cmd: Seq[String]): (Int, String, String) = {
-    val stdoutStream = new ByteArrayOutputStream
-    val stderrStream = new ByteArrayOutputStream
-    val stdoutWriter = new PrintWriter(stdoutStream)
-    val stderrWriter = new PrintWriter(stderrStream)
-    val exitValue = cmd.!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
-    stdoutWriter.close()
-    stderrWriter.close()
-    (exitValue, stdoutStream.toString, stderrStream.toString)
+    val stdout = new StringBuilder
+    val stderr = new StringBuilder
+    val logger = ProcessLogger(stdout append _, stderr append _)
+    val status = cmd ! logger
+    (status, stdout.toString, stderr.toString)
   }
 }
