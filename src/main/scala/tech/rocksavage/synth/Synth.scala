@@ -81,17 +81,14 @@ object Synth {
     val stdout = res._2
     val stderr = res._3
 
-    println(stdout)
-    println(stderr)
-    println(exitCode)
-
     if (exitCode != 0) {
       println(s"Error running yosys command: $command, stdout: $stdout, stderr: $stderr")
       exit(1)
     }
 
+    // print contents of synthOutPath
     val synthFile = scala.io.Source.fromFile(synthOutPath)
-    val synthString = synthFile.mkString
+    val synthString = synthFile.getLines.mkString("\n")
     synthFile.close()
 
     // Extract area and calculate gates
@@ -101,7 +98,7 @@ object Synth {
       case Some(line) => {
         val floatArea = line.split(":")(1).trim.toDouble
         val intArea = floatArea.toInt
-        Some((intArea / nand2Area).toInt)
+        Some((intArea / nand2Area).toFloat  )
       }
       case None => None
     }

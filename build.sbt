@@ -10,6 +10,8 @@ Test / parallelExecution := false
 val chiselVersion   = "6.6.0"
 val scalafmtVersion = "2.5.0"
 
+
+lazy val stdlib = RootProject(uri("https://github.com/The-Chiselers/stdlib.git#main"))
 lazy val root = (project in file("."))
   .settings(
     name                   := "synth",
@@ -30,6 +32,7 @@ lazy val root = (project in file("."))
       "org.chipsalliance" % "chisel-plugin" % chiselVersion cross CrossVersion.full
     )
   )
+  .dependsOn(stdlib)
 
 // Scala coverage settings
 coverageDataDir            := target.value / "../generated/scalaCoverage"
