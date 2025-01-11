@@ -3,8 +3,8 @@
 
 package tech.rocksavage.synth
 
-class SynthResult(synthString: String, stdout: String, gates: Option[Int]) {
+class SynthResult(synthString: String, stdout: String, gates: Option[Float]) {
   def getSynthString: String = synthString
   def getStdout: String = stdout
-  def getGates: Option[Int] = gates
+  def getGates: Option[Float] = gates
 }

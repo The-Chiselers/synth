@@ -17,7 +17,10 @@ object Util {
   def runCommand(cmd: Seq[String]): (Int, String, String) = {
     val stdout = new StringBuilder
     val stderr = new StringBuilder
-    val logger = ProcessLogger(stdout append _, stderr append _)
+    val logger = ProcessLogger(
+      (line: String) => stdout.append(line + "\n"),  // Append newline to stdout
+      (line: String) => stderr.append(line + "\n")   // Append newline to stderr
+    )
     val status = cmd ! logger
     (status, stdout.toString, stderr.toString)
   }
