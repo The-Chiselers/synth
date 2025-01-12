@@ -40,11 +40,19 @@ object Synth {
     var verilog = ""
     for (c <- constructors) {
       try {
-        verilog = ChiselStage.emitSystemVerilog(c.newInstance(params: _*).asInstanceOf[RawModule], firtoolOpts = Array(
-          "--lowering-options=disallowLocalVariables,disallowPackedArrays",
-          "--disable-all-randomization",
-          "--strip-debug-info",
-        ))
+        // Unpack the Seq into individual arguments
+        val unpackedParams = params match {
+          case Seq(seq: Seq[_]) => seq
+          case _ => params
+        }
+        verilog = ChiselStage.emitSystemVerilog(
+          c.newInstance(unpackedParams: _*).asInstanceOf[RawModule],
+          firtoolOpts = Array(
+            "--lowering-options=disallowLocalVariables,disallowPackedArrays",
+            "--disable-all-randomization",
+            "--strip-debug-info"
+          )
+        )
       } catch {
         case e: java.lang.IllegalArgumentException => {
           println("Constructor " + c + " failed: " + e)
