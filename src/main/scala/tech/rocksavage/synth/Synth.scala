@@ -2,8 +2,10 @@ package tech.rocksavage.synth
 
 import chisel3.RawModule
 import circt.stage.ChiselStage
-import tech.rocksavage.util.Util.{runCommand, which}
+
 import scala.sys.exit
+
+import tech.rocksavage.util.Util._
 
 /**
  * The `Synth` object provides utilities for generating Verilog from Chisel modules and synthesizing them using Yosys.
@@ -77,7 +79,12 @@ object Synth {
     var verilog = ""
     for (c <- constructors) {
       try {
-        verilog = ChiselStage.emitSystemVerilog(c.newInstance(params: _*).asInstanceOf[RawModule], firtoolOpts = Array(
+        // Unpack the Seq into individual arguments
+        val unpackedParams = params match {
+          case Seq(seq: Seq[_]) => seq
+          case _ => params
+        }
+        verilog = ChiselStage.emitSystemVerilog(c.newInstance(unpackedParams: _*).asInstanceOf[RawModule], firtoolOpts = Array(
           "--lowering-options=disallowLocalVariables,disallowPackedArrays",
           "--disable-all-randomization",
           "--strip-debug-info",
@@ -87,6 +94,10 @@ object Synth {
           println("Constructor " + c + " failed: " + e)
         }
       }
+    }
+    if (verilog.isEmpty) {
+      println("Error generating Verilog for module " + moduleName)
+      exit(1)
     }
     synthesizeFromVerilogString(synthConfig, className, verilog)
   }
